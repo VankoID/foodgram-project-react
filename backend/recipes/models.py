@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.validators import (MaxValueValidator, MinValueValidator,
-                                    RegexValidator)
+                                    RegexValidator, MaxLengthValidator)
 from django.db import models
 
 User = get_user_model()
@@ -22,10 +22,8 @@ class Recipe(models.Model):
         upload_to='recipes/',
         verbose_name='Картинка',
     )
-    text = models.TextField(
-        verbose_name='Описание',
-        max_length=2000
-    )
+    text = models.TextField(validators=[MaxLengthValidator(1000)], verbose_name='Описание',)
+
     ingredients = models.ManyToManyField(
         'Ingredient',
         through='RecipeIngredient',
@@ -50,6 +48,7 @@ class Recipe(models.Model):
     )
 
     class Meta:
+        ordering = ['-id']
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
@@ -131,6 +130,9 @@ class RecipeIngredient(models.Model):
                     MaxValueValidator(1440),)
     )
 
+    def __str__(self):
+        return f'{self.recipe}: {self.ingredient} – {self.amount}'
+
 
 class RecipeTag(models.Model):
     """Модель тега в рецепте"""
@@ -150,6 +152,9 @@ class RecipeTag(models.Model):
     class Meta:
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
+
+    def __str__(self):
+        return self.tag.name
 
 
 class Favorite(models.Model):
@@ -176,6 +181,9 @@ class Favorite(models.Model):
             )
         ]
 
+    def __str__(self):
+        return f'{self.user} имеет "{self.recipe}" в Избранном'
+
 
 class ShoppingCart(models.Model):
     """Модель продуктовой корзины"""
@@ -200,3 +208,6 @@ class ShoppingCart(models.Model):
                 fields=['user', 'recipe'], name='unique_shopping_cart'
             )
         ]
+
+    def __str__(self):
+        return f'{self.user} имеет {self.recipe} в Корзине покупок'

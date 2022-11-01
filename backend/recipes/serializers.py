@@ -80,13 +80,12 @@ class AddRecipeSerializer(serializers.ModelSerializer):
                 'Нужно выбрать минимум 1 ингредиент!')
         for ingredient in ingredients:
             try:
-                int(ingredient.get('amount'))
                 if int(ingredient.get('amount')) <= 0:
                     raise serializers.ValidationError(
                         'Количество должно быть положительным!')
             except Exception:
-                raise ValidationError({'amount': 'Колличество должно'
-                                      'быть числом'})
+                raise ValidationError({'amount': 'Количество должно'
+                                      'быть целым числом'})
             check_id = ingredient['id']
             check_ingredient = Ingredient.objects.filter(id=check_id)
             if not check_ingredient.exists():
@@ -98,7 +97,6 @@ class AddRecipeSerializer(serializers.ModelSerializer):
         """Валидатор времени приготовления"""
         cooking_time = self.initial_data.get('cooking_time')
         try:
-            int(cooking_time)
             if int(cooking_time) < 1:
                 raise serializers.ValidationError(
                     'Время готовки не может быть'
@@ -181,7 +179,6 @@ class AddRecipeSerializer(serializers.ModelSerializer):
         representation['ingredients'] = RecipeIngredientSerializer(
             RecipeIngredient.objects.filter(
                 recipe=recipe).all(), many=True).data
-
         return representation
 
 
@@ -207,18 +204,14 @@ class ShowRecipeFullSerializer(serializers.ModelSerializer):
     def get_is_favorited(self, obj):
         """Проверяет находится ли рецепт в избранном."""
         request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return Favorite.objects.filter(recipe=obj,
-                                       user=request.user).exists()
+        return (request.user.is_authenticated
+                and Favorite.objects.filter(recipe=obj, user=request.user).exists())
 
     def get_is_in_shopping_cart(self, obj):
         """Проверяет находится ли рецепт в продуктовой корзине."""
         request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(recipe=obj,
-                                           user=request.user).exists()
+        return (request.user.is_authenticated
+                and ShoppingCart.objects.filter(recipe=obj, user=request.user).exists())
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -240,9 +233,6 @@ class FavoriteSerializer(serializers.ModelSerializer):
         """Валидатор избранных рецептов"""
         recipe = data['recipe']
         user = data['user']
-        if user == recipe.author:
-            raise serializers.ValidationError(
-                'Вы не можете добавить свои рецепты в избранное')
         if Favorite.objects.filter(recipe=recipe, user=user).exists():
             raise serializers.ValidationError(
                 'Вы уже добавили рецепт в избранное')

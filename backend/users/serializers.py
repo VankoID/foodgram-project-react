@@ -30,9 +30,8 @@ class CustomUserSerializer(UserSerializer):
     def get_is_subscribed(self, obj):
         """ Метод обработки параметра is_subscribed"""
         user = self.context.get('request').user
-        if not user or user.is_anonymous:
-            return False
-        return Subscribe.objects.filter(user=user, author=obj).exists()
+        return (user.is_authenticated
+                and Subscribe.objects.filter(user=user, author=obj).exists())
 
 
 class SubscribeUserSerializer(serializers.ModelSerializer):
@@ -56,7 +55,7 @@ class SubscribeUserSerializer(serializers.ModelSerializer):
         if user.id == subscribing_id:
             raise serializers.ValidationError(
                 'Нельзя подписаться на самого себя')
-        if user.id is None:
+        if user is None:
             raise serializers.ValidationError(
                 'Пользователь не существует')
         return data
@@ -83,10 +82,8 @@ class SubscribeViewSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         """ Метод обработки параметра is_subscribed"""
-        if not self.context.get('request').user.is_authenticated:
-            return False
-        return Subscribe.objects.filter(
-            author=obj, user=self.context['request'].user).exists()
+        return (self.context.get('request').user.is_authenticated
+                and Subscribe.objects.filter(author=obj, user=self.context['request'].user).exists())
 
     def get_recipes(self, obj):
         """Метод получения данных рецептов автора"""

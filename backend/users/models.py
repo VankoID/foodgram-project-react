@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import UniqueConstraint, Q, F, CheckConstraint
 
 
 class User(AbstractUser):
@@ -40,9 +42,7 @@ class User(AbstractUser):
         ordering = ('username',)
 
     def __str__(self):
-        if self.username:
-            return self.username
-        return self.email
+        return self.username
 
 
 class Subscribe(models.Model):
@@ -58,12 +58,23 @@ class Subscribe(models.Model):
         related_name='subscribing'
     )
 
+    def clean(self):
+        if self.user == self.author:
+            raise ValidationError('Вы не можете подписаться на самого себя.')
+
     class Meta:
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
         constraints = [
-            models.UniqueConstraint(
+            UniqueConstraint(
                 fields=['user', 'author'],
                 name='unique_author_user_subscribing'
-            )
+            ),
+            CheckConstraint(
+                check=~Q(user=F('author')),
+                name='self_following',
+            ),
         ]
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.author}.'
