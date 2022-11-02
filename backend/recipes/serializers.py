@@ -1,10 +1,19 @@
 from drf_extra_fields.fields import Base64ImageField
-from jsonschema import ValidationError
+# from jsonschema import ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
 from users.serializers import CustomUserSerializer
+from django.shortcuts import get_object_or_404
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
+
+COOKING_TIME_MORE_ZERO = 'Время готовки должно быть больше нуля!'
+FAVORITE_ADDED = 'Рецепт уже добавлен в избранное!'
+INGREDIENT_ADDED = 'Ингредиент не должен повторяться!'
+TAG_ADDED = 'Тег не должен повторяться!'
+SHOPLIST_ADDED = 'Рецепт уже добавлен в список покупок!'
+INGREDIENT_MORE_ZERO = 'Количество ингредиента должно быть больше 0!'
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -78,20 +87,27 @@ class AddRecipeSerializer(serializers.ModelSerializer):
         if not ingredients:
             raise serializers.ValidationError(
                 'Нужно выбрать минимум 1 ингредиент!')
+        ingredients_list = []
         for ingredient in ingredients:
+            if ingredient in ingredients_list:
+                raise serializers.ValidationError({
+                    'ingredients': 'Ингредиенты не могут повторяться!'
+                })
             try:
                 if int(ingredient.get('amount')) <= 0:
                     raise serializers.ValidationError(
                         'Количество должно быть положительным!')
             except Exception:
-                raise ValidationError({'amount': 'Количество должно'
+                raise serializers.ValidationError({'amount': 'Количество должно'
                                       'быть целым числом'})
             check_id = ingredient['id']
             check_ingredient = Ingredient.objects.filter(id=check_id)
             if not check_ingredient.exists():
                 raise serializers.ValidationError(
                     'Данного продукта нет в базе!')
+            ingredients_list.append(ingredient)
         return data
+
 
     def validate_cooking_time(self, data):
         """Валидатор времени приготовления"""
@@ -106,8 +122,7 @@ class AddRecipeSerializer(serializers.ModelSerializer):
                     'Время готовки не может быть'
                     ' больше 600!')
         except Exception:
-            raise serializers.ValidationError({'cooking_time': 'Время'
-                                               ' должно быть больше 0'})
+            raise serializers.ValidationError({'cooking_time': 'Время должно быть больше 0'})
         return data
 
     def validate_tags(self, data):

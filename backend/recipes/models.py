@@ -41,7 +41,7 @@ class Recipe(models.Model):
                               'Минимальное время приготовления 1 мин'
                               ),
             MaxValueValidator(600,
-                              'Приготовь попроще, жизнь не равно кухня'
+                              'Приготовь попроще. Слишком долго'
                               ),
         ],
         verbose_name='Время приготовления (в минутах)',
@@ -53,7 +53,7 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
 
     def __str__(self):
-        return self.text
+        return self.name
 
 
 class Tag(models.Model):
@@ -130,8 +130,16 @@ class RecipeIngredient(models.Model):
                     MaxValueValidator(1440),)
     )
 
+    class Meta:
+        constraints = (
+            models.UniqueConstraint(
+                fields=('recipe', 'ingredient'),
+                name='unique_recipeingredient'
+            ),
+        )
+
     def __str__(self):
-        return f'{self.recipe}: {self.ingredient} – {self.amount}'
+        return f'{self.recipe.name}: {self.ingredient} – {self.amount}'
 
 
 class RecipeTag(models.Model):
@@ -153,8 +161,14 @@ class RecipeTag(models.Model):
         verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
 
+    constraints = [
+        models.UniqueConstraint(
+            fields=['user', 'recipe'], name='unique_tag'
+        )
+    ]
+
     def __str__(self):
-        return self.tag.name
+        return self.recipe.name
 
 
 class Favorite(models.Model):
@@ -199,15 +213,15 @@ class ShoppingCart(models.Model):
         related_name='shopping_cart',
         verbose_name='Продуктовая корзина',
     )
+    constraints = [
+        models.UniqueConstraint(
+            fields=['user', 'recipe'], name='unique_shopping_cart'
+        )
+    ]
 
     class Meta:
         verbose_name = 'Продуктовая корзина'
         verbose_name_plural = 'Продуктовые корзины'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['user', 'recipe'], name='unique_shopping_cart'
-            )
-        ]
 
     def __str__(self):
         return f'{self.user} имеет {self.recipe} в Корзине покупок'
