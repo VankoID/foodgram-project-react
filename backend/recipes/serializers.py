@@ -87,12 +87,12 @@ class AddRecipeSerializer(serializers.ModelSerializer):
         if not ingredients:
             raise serializers.ValidationError(
                 'Нужно выбрать минимум 1 ингредиент!')
-        ingredients_list = []
+        unique_ingredients = set()
         for ingredient in ingredients:
-            if ingredient in ingredients_list:
-                raise serializers.ValidationError({
-                    'ingredients': 'Ингредиенты не могут повторяться!'
-                })
+            if ingredient['id'] in unique_ingredients:
+                raise serializers.ValidationError(
+                             'В рецепте ингредиенты не должны повторяться')
+            unique_ingredients.add(ingredient['id'])
             try:
                 if int(ingredient.get('amount')) <= 0:
                     raise serializers.ValidationError(
@@ -105,9 +105,7 @@ class AddRecipeSerializer(serializers.ModelSerializer):
             if not check_ingredient.exists():
                 raise serializers.ValidationError(
                     'Данного продукта нет в базе!')
-            ingredients_list.append(ingredient)
         return data
-
 
     def validate_cooking_time(self, data):
         """Валидатор времени приготовления"""
