@@ -8,14 +8,6 @@ from django.shortcuts import get_object_or_404
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                      ShoppingCart, Tag)
 
-COOKING_TIME_MORE_ZERO = 'Время готовки должно быть больше нуля!'
-FAVORITE_ADDED = 'Рецепт уже добавлен в избранное!'
-INGREDIENT_ADDED = 'Ингредиент не должен повторяться!'
-TAG_ADDED = 'Тег не должен повторяться!'
-SHOPLIST_ADDED = 'Рецепт уже добавлен в список покупок!'
-INGREDIENT_MORE_ZERO = 'Количество ингредиента должно быть больше 0!'
-
-
 class IngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для модели ингридиентов"""
     class Meta:
